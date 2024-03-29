@@ -1,0 +1,1 @@
+CREATE TYPE task_type AS ENUM ('Foo', 'Bar', 'Baz');

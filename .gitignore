@@ -1,0 +1,20 @@
+# Compiled files
+/target/
+
+# Dependency directories
+Cargo.toml.orig
+Cargo.toml.bkp
+
+# Build artifacts
+*.rs.bk
+
+# Editor-specific files
+.vscode/
+.idea/
+
+# Generated documentation
+/target/doc/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
