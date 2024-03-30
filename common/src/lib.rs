@@ -3,6 +3,8 @@
 use std::{fmt::Display, str::FromStr};
 
 use chrono::{DateTime, Utc};
+use rand::Rng;
+use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgTypeInfo, Postgres, Type, TypeInfo};
 use uuid::Uuid;
@@ -92,6 +94,56 @@ impl Task {
             kind,
             status: TaskStatus::Pending,
         }
+    }
+
+    pub async fn run(&self) {
+        match self.kind {
+            TaskKind::Foo => self.run_foo_task(),
+            TaskKind::Bar => self.run_bar_task().await,
+            TaskKind::Baz => self.run_baz_task(),
+        }
+    }
+
+    fn run_foo_task(&self) {
+        // We don't sleep here because we calculate the 3 second delay when creating the task
+        // This allows us to not have to sleep in the task itself. See `TaskKind::process_delay`
+        println!("Foo {}", self.id);
+    }
+
+    async fn run_bar_task(&self) {
+        // We need to set all of these headers, otherwise the url will send a 400 bad request
+        let client = reqwest::ClientBuilder::new()
+            .user_agent("Mozilla/5.0 (Reqwests) Gecko/20100101 Firefox/124.0")
+            .build()
+            .unwrap();
+        let request = client
+            .get("https://www.whattimeisitrightnow.com/")
+            .header("Accept", "text/html")
+            .header("host", "www.whattimeisitrightnow.com")
+            .build()
+            .unwrap();
+        let response = client.execute(request).await;
+        let message = match response {
+            Err(err) => {
+                if err.is_status() {
+                    format!("{}", err.status().unwrap()) // Because we are checking that it's
+                } else {
+                    format!("{}", err)
+                }
+            }
+            Ok(response) => {
+                format!("{}", response.status())
+            }
+        };
+        // It was unclear if I should prefix it with Bar or not, but based on the explicit text of
+        // the requirements, I would just print the status code.
+        println!("{}", message);
+    }
+
+    fn run_baz_task(&self) {
+        let mut rng = rand::thread_rng();
+        let random_number = rng.gen_range(0..=343);
+        println!("Baz {}", random_number);
     }
 }
 
