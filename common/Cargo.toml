@@ -19,8 +19,11 @@ sqlx = { version = "0.7.4", features = [
 reqwest = "0.12.2"
 rand = "0.8.5"
 
+[dev-dependencies]
+serial_test = { version = "3.0.0" }
+
 [features]
-default = ["real_database_tests"]
+default = []
 
 # When you enable this feature, you have to run tests with only a single job because it modifies the actual
 # database. This is only used when developing the actual database queries.

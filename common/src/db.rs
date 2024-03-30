@@ -44,7 +44,7 @@ impl Db {
 
     #[cfg(test)]
     pub(crate) async fn clear_database(&self) -> Result<(), DbError> {
-        query!("TRUNCATE TABLE tasks").execute(&self.pool).await?;
+        query!("DELETE FROM tasks").execute(&self.pool).await?;
 
         Ok(())
     }
@@ -180,39 +180,19 @@ impl Db {
 
         Ok(())
     }
-
-    // fn start_processing(&self, con: &mut redis::Connection, task_id: &str) -> Result<(), DbError> {
-    //     todo!()
-    // }
-
-    // fn with_transaction<T, F: FnOnce(&mut redis::Connection) -> Result<T, DbError>>(
-    //     &self,
-    //     con: &mut redis::Connection,
-    //     body: F,
-    // ) -> Result<T, DbError> {
-    //     let _: () = redis::cmd("MULTI").query(con)?;
-    //     match body(con) {
-    //         Ok(result) => {
-    //             let _: () = redis::cmd("EXEC").query(con)?;
-    //             Ok(result)
-    //         }
-    //         Err(e) => {
-    //             let _: () = redis::cmd("DISCARD").query(con)?;
-    //             Err(e)
-    //         }
-    //     }
-    // }
 }
 
 #[cfg(all(test, feature = "real_database_tests"))]
 mod tests {
     use crate::TaskKind::Bar;
+    use serial_test::serial;
 
     use super::*;
 
     const DATABASE_URL: &str = env!("DATABASE_URL");
 
     #[tokio::test]
+    #[serial]
     async fn test_happy_path_single_task() {
         println!("Running test_happy_path_single_task");
         let now = Utc.with_ymd_and_hms(2022, 1, 2, 13, 14, 15).unwrap();
@@ -236,6 +216,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_queue_returns_earliest_task() {
         println!("Running test_queue_returns_earliest_task");
         let now = Utc.with_ymd_and_hms(2022, 1, 2, 13, 14, 15).unwrap();
@@ -263,6 +244,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial]
     async fn test_queue_can_remove_task() {
         let now = Utc.with_ymd_and_hms(2022, 1, 2, 13, 14, 15).unwrap();
         let db = Db::try_new(DATABASE_URL)
@@ -281,6 +263,7 @@ mod tests {
             .expect("Unable to add task to the database");
 
         let tasks_before = db.get_tasks().await.expect("Unable to get tasks");
+        assert_eq!(tasks_before.len(), 2);
 
         let next_task = db
             .get_next_task_executable_at(Utc::now())
@@ -294,9 +277,6 @@ mod tests {
             .expect("Unable to complete task");
 
         let tasks_after = db.get_tasks().await.expect("Unable to get tasks");
-
-        println!("Tasks before: {:?}", tasks_before);
-        println!("Tasks after: {:?}", tasks_after);
 
         let next_task = db
             .get_next_task_executable_at(Utc::now())

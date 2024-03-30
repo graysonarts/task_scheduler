@@ -4,13 +4,16 @@ use chrono::Utc;
 use common::{Db, Task};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
-const MAX_CONCURRENT_TASKS: usize = 1;
+// This value could be read from the environment, or set to a certain number based on the number of cores,
+// or some other metric. For now, we'll just hardcode it.
+const MAX_CONCURRENT_TASKS: usize = 10;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenvy::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
+    // This allows us to cap the max number of spawned tasks to prevent overloading the system.
     let running_tasks = Arc::new(Semaphore::new(MAX_CONCURRENT_TASKS));
     let db = Arc::new(Db::try_new(&database_url).await?);
 
@@ -31,7 +34,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 fn run_task(permit: OwnedSemaphorePermit, db: Arc<Db>, task: Task) {
     tokio::spawn(async move {
-        // Do Something
         task.run().await;
         let result = db.complete_task(task.id).await;
         if let Err(err) = result {
