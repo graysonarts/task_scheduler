@@ -26,11 +26,13 @@ You need to have a local running database setup to compile. I just used docker t
 
 I have some tests that run against the live database. **They will delete everything in the database**.
 
-They are behind a feature flag
+They are behind a feature flag, and are required to be run serially. Luckily, there is the `serial-test` crate that can achieve that goal.
+
+Run the tests like this: `cargo test --package common --features real_database_tests`
 
 # API
 
-\*Note: all times are in `ISO-8601` format with `+0000` replaced with `Z` for UTC.
+_Note: all times are in `ISO-8601` format with `+0000` replaced with `Z` for UTC._
 
 - `GET /tasks` get a list of the tasks
   - Add `?filter=status:<status>` to filter by status
