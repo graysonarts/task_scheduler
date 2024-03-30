@@ -1,0 +1,1 @@
+CREATE TYPE task_status_type AS ENUM ('Pending', 'InProgress', 'Completed');
